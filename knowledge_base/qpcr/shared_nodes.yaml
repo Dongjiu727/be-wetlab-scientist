@@ -1,0 +1,70 @@
+# qPCR 共享诊断节点
+# check_primer_validated 是决策树里的"闸门节点"——只判断是否做过设计验证，
+# 具体怎么验证的详细内容在 knowledge_base/design_guides/qpcr_design.md 里，
+# 两边不重复维护（ADR-008的闸门/详细内容分工模式）。
+
+check_primer_validated:
+  question: "这条引物用于正式实验前，是否完整走过设计验证流程（GC含量、退火温度匹配、NTC测试、梯度稀释测效率等）？"
+  branches:
+    - answer: "没有，直接拿来用了"
+      diagnosis: "跳过了引物设计验证步骤，这是常见的问题根源"
+      confirm_experiment: "参考「预防式设计指南」里的引物设计checklist，补做验证后再重复实验"
+    - answer: "有，之前验证过没问题"
+      next: primer_operational_check
+
+primer_operational_check:
+  question: "检查这条引物的冻存时间/条件、解冻步骤，有没有拿错或交叉污染？可测吸光度看是否降解。"
+  branches:
+    - answer: "怀疑降解、保存不当或拿错，无法进一步确认"
+      diagnosis: "引物存储或操作环节出问题"
+      confirm_experiment: "核对正确序列，重新订购、重新溶解稀释，再做一次"
+    - answer: "存储条件正常，基本排除引物问题"
+      next: check_positive_negative_control
+
+check_positive_negative_control:
+  question: "阳性对照的Ct值是否正常？"
+  branches:
+    - answer: "阳性对照正常"
+      next: check_cdna_quality
+    - answer: "阳性对照也无扩增"
+      diagnosis: "体系/仪器/试剂本身出了问题，需要系统性排查"
+      confirm_experiment: "检查PCR mix是否失效、仪器是否需要校准，更换全新体系重新测试"
+
+check_cdna_quality:
+  question: "测这批cDNA的浓度和260/280比值，和以前验证过的cDNA对照比较"
+  branches:
+    - answer: "浓度正常、比值正常"
+      diagnosis: "表达量可能低于该方法的检测下限"
+      confirm_experiment: "查表达数据库验证；若确认极低表达，考虑增加起始RNA量或更灵敏的检测方法"
+    - answer: "浓度偏低或比值异常（提示单链/降解）"
+      diagnosis: "逆转录步骤出问题（效率低/RNA降解/RT mix过期或用错）"
+      confirm_experiment: "重新收集RNA样本，重新逆转录，检查RT mix批次号和保存条件"
+
+# 以下三个节点被qPCR-001（多峰分支）和qPCR-003共同引用，因此提升为共享节点
+check_peak_position_and_curve:
+  question: "熔解曲线峰的位置、数量，配合扩增曲线，估算产物大概长度和种类数"
+  branches:
+    - answer: "已估算，继续跑电泳确认"
+      next: run_gel_electrophoresis
+
+run_gel_electrophoresis:
+  question: "PCR产物跑电泳，实际条带大小如何？"
+  branches:
+    - answer: "目标大小条带正常，同时出现明显额外大片段"
+      next: blast_check
+    - answer: "只有很小的非特异片段（几十bp级别，符合引物二聚体大小）"
+      diagnosis: "引物二聚体"
+      confirm_experiment: >
+        不需要花时间优化现有引物条件；直接多设计2-3条备选引物，
+        结合文献中已验证过的序列作对照，同批跑一次，比较扩增曲线、Ct值和ΔCt，
+        选出表现最好的一组即可。
+
+blast_check:
+  question: "把引物序列拿去NCBI BLAST比对"
+  branches:
+    - answer: "比对到其他基因/物种，或提示模板本身有污染"
+      diagnosis: "引物特异性不足，或样本模板污染"
+      confirm_experiment: "换一套引物；同时检查样本处理流程是否存在交叉污染环节"
+    - answer: "序列本身没问题，但样本刚好高表达某个基因，个别碱基匹配导致大量非特异扩增"
+      diagnosis: "偶发性非特异扩增（样本依赖性）"
+      confirm_experiment: "换引物设计区域，避开与高表达基因重叠的碱基区域"

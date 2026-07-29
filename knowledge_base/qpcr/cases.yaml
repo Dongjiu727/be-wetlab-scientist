@@ -1,0 +1,54 @@
+- case_id: qPCR-001
+  symptom: "Ct值异常晚（比预期高）"
+  entry_point: check_melt_peak_shape
+  nodes:
+    check_melt_peak_shape:
+      question: "熔解曲线是单峰还是多峰？"
+      branches:
+        - answer: "多峰（怀疑非特异性扩增）"
+          next: check_peak_position_and_curve
+        - answer: "单峰"
+          next: check_ct_threshold
+
+    check_ct_threshold:
+      question: "Ct值是否超过35？"
+      branches:
+        - answer: "超过35（接近检测极限）"
+          diagnosis: "结果接近方法检测下限，可能不稳定"
+          confirm_experiment: "增加起始样本量，或考虑预扩增等提高灵敏度的方法"
+        - answer: "未超过35"
+          next: check_reference_gene_ct
+
+    check_reference_gene_ct:
+      question: "reference gene的扩增曲线和Ct值是否正常？"
+      branches:
+        - answer: "正常"
+          next: check_primer_validated
+        - answer: "异常"
+          diagnosis: "reference gene本身可能有问题，需要先单独排查reference gene"
+          confirm_experiment: "针对reference gene单独走一遍无扩增/异常排查流程"
+
+  author_case_note: >
+    作者的经验回忆，供参考：Ct异常晚但单峰、未超35、reference也正常时，多数情况是内源表达量低，
+    可通过增加起始样本量解决，但要注意reference gene的Ct也会随之降低，
+    若降到6-8以下同样不可靠，需要对reference gene模板额外稀释。
+  tags: [tumor_immunology, late_ct, low_expression]
+
+- case_id: qPCR-002
+  symptom: "完全无扩增"
+  entry_point: check_primer_validated
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：这个case几乎完全复用了qPCR的共享排查子树
+    （引物验证 → 存储操作 → 阳性阴性对照 → cDNA质量），
+    说明这套共享节点设计覆盖了qPCR最常见的无扩增根因路径。
+  tags: [tumor_immunology, no_amplification, primer_validation, rna_degradation]
+
+- case_id: qPCR-003
+  symptom: "熔解曲线多峰，怀疑非特异扩增或污染"
+  entry_point: check_peak_position_and_curve
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：现在实验室多用商业化reaction mix，退火温度普遍设计在59-60°C左右，
+    引物设计常直接参考高引用率文献中验证过的序列，减少了从零设计的troubleshooting频率。
+  tags: [tumor_immunology, primer_specificity, contamination]

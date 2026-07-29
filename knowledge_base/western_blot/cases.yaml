@@ -1,0 +1,36 @@
+- case_id: WB-001
+  symptom: "膜上完全无目标蛋白信号（marker/ladder位置正常）"
+  entry_point: check_reagent_validity
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：这是WB最常遇到的症状类型，排查优先级按"检查成本从低到高"排序——
+    先看试剂/剪膜这类几分钟就能确认的事，再进入转膜、抗体这些需要更多时间验证的环节。
+  tags: [tumor_immunology, no_signal]
+
+- case_id: WB-002
+  symptom: "目标条带能看到但很淡，需要长时间曝光才显影"
+  entry_point: check_reference_exposure
+  nodes:
+    check_reference_exposure:
+      question: "reference蛋白（如GAPDH/actin）曝光时间是否也偏长（如>5-10秒才显影）？"
+      branches:
+        - answer: "是——reference也需要长曝光"
+          next: check_controls
+        - answer: "否——reference很快显影（如<1秒），只是目标蛋白弱"
+          next: check_abundance
+
+    check_abundance:
+      question: "查文献/数据库（如Human Protein Atlas）或自己的qPCR相对表达数据，该蛋白在此样本中表达丰度如何？"
+      branches:
+        - answer: "确认表达本身就低（数据库/qPCR都提示低表达）"
+          diagnosis: "内源表达量低，非实验操作问题"
+          confirm_experiment: >
+            下次收集样本时增加起始细胞量（相同裂解液体积下提高细胞密度）；
+            选大孔梯度胶/结合力更强的膜/更灵敏的转膜液和ECL试剂；
+            适当延长曝光时间到可接受范围内。
+        - answer: "数据库/qPCR显示表达量应该正常，但WB看不到"
+          next: check_target_size
+  author_case_note: >
+    作者的经验回忆，供参考：核心判断依据是"reference蛋白曝光时间是否也异常"——
+    如果reference也需要长曝光，问题往往出在体系层面（对照/抗体/试剂），而不是目标蛋白本身。
+  tags: [tumor_immunology, weak_signal, protein_abundance]

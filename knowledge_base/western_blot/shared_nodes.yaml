@@ -1,0 +1,77 @@
+# Western Blot 共享诊断节点
+# 这些节点可以被多个case通过node_id引用，避免重复定义同一套排查逻辑。
+# node_antibody_problem 支持通过 params 传入 antibody_role，实现同一子树用于
+# 排查不同抗体角色（target / reference）——ADR-002的"外部参数化"复用模式。
+
+check_reagent_validity:
+  question: "本次用到的关键试剂（抗体、稀释液、显影液、转膜液等）是否在有效期内，包装/外观有无破损？"
+  branches:
+    - answer: "发现有试剂过期或破损"
+      diagnosis: "试剂失效"
+      confirm_experiment: "更换新试剂重新实验"
+    - answer: "试剂均在有效期内且完好"
+      next: check_membrane_cutting
+
+check_membrane_cutting:
+  question: "膜是否被剪成条状分别孵育？目标蛋白分子量是否接近剪切边界？"
+  branches:
+    - answer: "是，且目标蛋白分子量确实接近某个剪切线"
+      diagnosis: "目标条带可能被剪到了其他膜条上（或被丢弃的那一条）"
+      confirm_experiment: "检查其他剪下的膜条/丽春红染色照片，确认目标区域出现在哪一条上"
+    - answer: "否，或目标分子量明显不在任何剪切边界附近"
+      next: check_controls
+
+check_controls:
+  question: "阳性对照和阴性对照结果如何？"
+  branches:
+    - answer: "阳性对照也无信号"
+      next:
+        node: node_antibody_problem
+        params:
+          antibody_role: "目标蛋白抗体（阳性对照也失败，怀疑抗体体系整体问题）"
+    - answer: "阳性对照有条带，阴性对照干净（对照正常）"
+      next: check_total_protein
+
+check_total_protein:
+  question: "转膜后丽春红染膜 + 凝胶考马斯亮蓝染色，能看到总蛋白条带吗？"
+  branches:
+    - answer: "膜上无总蛋白，胶上仍有明显残留蛋白"
+      diagnosis: "转膜失败"
+      confirm_experiment: "检查转膜buffer新鲜度、电压/电流、时间，重新转膜"
+    - answer: "膜上有总蛋白（转移基本正常）"
+      next: check_target_size
+
+check_target_size:
+  question: "目标蛋白理论分子量对应区域，总蛋白信号是否正常？（注意：marker/ladder位置正常≠目标蛋白真的转过来了）"
+  branches:
+    - answer: "目标蛋白很小（<10-15kDa），怀疑电泳阶段就跑出胶底"
+      diagnosis: "小分子蛋白电泳时间过长/胶浓度不合适，蛋白跑出凝胶底部"
+      confirm_experiment: "缩短电泳时间，或换更高浓度胶（如15-20%）/Tris-Tricine胶体系"
+    - answer: "总蛋白在膜上能看到，但目标区域信号弱，怀疑转膜时穿膜"
+      diagnosis: "转膜条件不适合小分子蛋白，蛋白穿过膜孔跑走"
+      confirm_experiment: "降低甲醇浓度/电压，缩短转膜时间，换0.2μm孔径PVDF膜"
+    - answer: "目标蛋白很大（>150kDa），该区域信号弱"
+      diagnosis: "大蛋白未能有效转出，转膜方式不适合"
+      confirm_experiment: "改湿转，延长转膜时间，检查膜孔径规格"
+    - answer: "该区域总蛋白信号正常"
+      next:
+        node: node_antibody_problem
+        params:
+          antibody_role: "目标蛋白抗体"
+
+node_antibody_problem:
+  question: "抗体排查（{antibody_role}）"
+  is_checklist: true
+  checklist:
+    - "二抗种属是否与一抗宿主种属匹配（如一抗为鼠源，二抗需为anti-mouse）"
+    - "说明书确认种属反应性/稀释比例"
+    - "是否过期/保存不当/反复冻融"
+    - "提高一抗、二抗浓度"
+    - "改4°C过夜孵育一抗"
+    - "延长显色/曝光时间"
+  on_all_ruled_out: check_expression_level
+
+check_expression_level:
+  question: "以上均已排查，目标蛋白本身表达量是否过低？"
+  diagnosis: "内源表达量可能过低"
+  confirm_experiment: "增加上样量，做loading梯度（如10/20/40μg）；重新核对胶浓度和膜规格是否匹配目标蛋白大小"
