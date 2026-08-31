@@ -1,48 +1,46 @@
 # 🔬 Be a WetLab Scientist
 
-把十几年Western Blot / qPCR troubleshooting实战经验，结构化成一个可交互的诊断助手，
-面向实验室学生和博后。目前覆盖肿瘤免疫相关的湿实验场景，未来会持续扩展。
+An interactive troubleshooting assistant that turns over a decade of hands-on Western Blot / qPCR debugging experience into a structured diagnostic tool for lab students and postdocs. Currently focused on tumor-immunology wet-lab workflows, with more assay types planned.
 
-## 这个项目想解决什么
+## Why this project
 
-市面上现有的资源（各厂商的troubleshooting指南、教学模拟网站）大多是静态的症状-原因对照表，
-不基于真实实验案例，也不支持交互式的鉴别诊断。这个项目的差异化：
+Most existing resources (vendor troubleshooting guides, teaching-simulation websites) are static symptom-cause tables — not grounded in real experimental cases, and not built for interactive differential diagnosis. This project is different:
 
-- **真实案例驱动**：每一条诊断逻辑背后都是真实实验室里遇到、验证过的问题
-- **交互式决策图，不是扁平表格**：症状 → 已知信息排除 → 鉴别问题 → 确认实验，逐步收窄
-- **可复用的诊断子树**：常见排查逻辑（如抗体排查、引物验证）只定义一次，被多个症状复用，避免知识库随案例增长而冗余膨胀
-- **两个平级入口**：「实验出问题了」（交互式诊断）+「准备设计新实验」（预防式最佳实践指南）——覆盖实验完整生命周期，不只是救火
+- **Built from real cases** — every diagnostic path is grounded in problems actually encountered and verified in the lab, not hypothetical scenarios.
+- **An interactive decision graph, not a flat table** — symptom → rule out known info → differentiating questions → confirmatory experiment, narrowing step by step.
+- **Reusable diagnostic subtrees** — common checks (e.g. antibody validation, primer verification) are defined once and reused across multiple symptoms, so the knowledge base doesn't bloat as cases are added.
+- **Two entry points at the same level** — "Something went wrong" (interactive diagnosis) and "Planning a new experiment" (preventive best-practice guides) — covering the full experiment lifecycle, not just firefighting.
 
-## 快速开始
+## Quick start
 
 ```bash
 pip install -r requirements.txt
 streamlit run app/main.py
 ```
 
-## 项目结构
+## Project structure
 
 ```
-engine/               # 通用诊断引擎（assay类型无关，加载并遍历决策图）
-app/                  # Streamlit交互界面
+engine/               # Assay-agnostic diagnostic engine — loads and traverses the decision graph
+app/                  # Streamlit interactive interface
 knowledge_base/
-  western_blot/        # WB共享节点 + 案例库
-  qpcr/                 # qPCR共享节点 + 案例库
-  design_guides/       # 预防式实验设计指南（骨架，持续补充）
-docs/                  # 架构设计文档
+  western_blot/        # WB shared nodes + case library
+  qpcr/                 # qPCR shared nodes + case library
+  design_guides/       # Preventive experiment-design guides (scaffold, actively growing)
+docs/                  # Architecture and design documentation
 ```
 
-## 现状
+## Current status
 
-- ✅ Western Blot: 2个案例（无信号、信号弱）
-- ✅ qPCR: 3个案例（Ct异常晚、无扩增、熔解曲线多峰/污染）
-- 🚧 设计指南：骨架已搭建，内容持续补充中
-- 🚧 更多症状类型（背景高、条带异常、Loading control异常等）待补充
+- ✅ Western Blot: 2 cases (no signal, weak signal)
+- ✅ qPCR: 3 cases (late Ct, no amplification, multiple melt peaks / contamination)
+- 🚧 Design guides: scaffold in place, content being filled in
+- 🚧 More symptom types coming (high background, aberrant bands, loading-control issues, etc.)
 
-## 贡献
+## Contributing
 
-欢迎其他实验室伙伴补充案例，请先看 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+Fellow lab scientists are welcome to contribute additional cases — please see [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 
-## 免责声明
+## Disclaimer
 
-本工具基于个人实验室经验整理，用于教学参考，不能替代专业指导。具体实验问题请结合实际情况并咨询导师/同行。
+This tool is compiled from personal lab experience and is intended for educational reference. It is not a substitute for professional guidance — please consult your PI/colleagues and use your judgment for actual experimental decisions.
