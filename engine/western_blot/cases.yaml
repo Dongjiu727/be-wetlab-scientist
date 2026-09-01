@@ -1,0 +1,64 @@
+- case_id: WB-001
+  symptom: "膜上完全无目标蛋白信号（marker/ladder位置正常）"
+  symptom_en: "No target protein signal on the membrane at all (marker/ladder bands look normal)"
+  entry_point: check_reagent_validity
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：这是WB最常遇到的症状类型，排查优先级按"检查成本从低到高"排序——
+    先看试剂/剪膜这类几分钟就能确认的事，再进入转膜、抗体这些需要更多时间验证的环节。
+  author_case_note_en: >
+    Author's field notes, for reference: this is one of the most common WB symptom types.
+    Prioritize checks from lowest to highest cost — first rule out the few-minute checks
+    (reagents, membrane cutting), then move into more time-consuming steps like transfer
+    and antibody validation.
+  tags: [tumor_immunology, no_signal]
+
+- case_id: WB-002
+  symptom: "目标条带能看到但很淡，需要长时间曝光才显影"
+  symptom_en: "Target band is visible but very faint, requiring a long exposure to develop"
+  entry_point: check_reference_exposure
+  nodes:
+    check_reference_exposure:
+      question: "reference蛋白（如GAPDH/actin）曝光时间是否也偏长（如>5-10秒才显影）？"
+      question_en: >
+        Does the reference protein (e.g. GAPDH/actin) also need a long exposure time
+        (e.g. >5–10 seconds to develop)?
+      branches:
+        - answer: "是——reference也需要长曝光"
+          answer_en: "Yes — the reference also needs a long exposure"
+          next: check_controls
+        - answer: "否——reference很快显影（如<1秒），只是目标蛋白弱"
+          answer_en: "No — the reference develops quickly (e.g. <1 second); only the target protein is weak"
+          next: check_abundance
+
+    check_abundance:
+      question: "查文献/数据库（如Human Protein Atlas）或自己的qPCR相对表达数据，该蛋白在此样本中表达丰度如何？"
+      question_en: >
+        Check the literature/databases (e.g. Human Protein Atlas) or your own qPCR relative
+        expression data — what is this protein's expression abundance in this sample?
+      branches:
+        - answer: "确认表达本身就低（数据库/qPCR都提示低表达）"
+          answer_en: "Confirmed the expression itself is low (both database and qPCR suggest low expression)"
+          diagnosis: "内源表达量低，非实验操作问题"
+          diagnosis_en: "Low endogenous expression, not an experimental error"
+          confirm_experiment: >
+            下次收集样本时增加起始细胞量（相同裂解液体积下提高细胞密度）；
+            选大孔梯度胶/结合力更强的膜/更灵敏的转膜液和ECL试剂；
+            适当延长曝光时间到可接受范围内。
+          confirm_experiment_en: >
+            Next time, increase the starting cell amount (higher cell density in the same
+            lysis buffer volume); use a larger-pore gradient gel / higher-affinity membrane /
+            more sensitive transfer buffer and ECL reagent; extend exposure time within a
+            reasonable range.
+        - answer: "数据库/qPCR显示表达量应该正常，但WB看不到"
+          answer_en: "Database/qPCR indicate expression should be normal, but WB doesn't show it"
+          next: check_target_size
+  author_case_note: >
+    作者的经验回忆，供参考：核心判断依据是"reference蛋白曝光时间是否也异常"——
+    如果reference也需要长曝光，问题往往出在体系层面（对照/抗体/试剂），而不是目标蛋白本身。
+  author_case_note_en: >
+    Author's field notes, for reference: the key diagnostic criterion is whether the reference
+    protein's exposure time is also abnormal — if the reference also needs a long exposure,
+    the problem usually lies at the system level (controls/antibodies/reagents) rather than
+    with the target protein itself.
+  tags: [tumor_immunology, weak_signal, protein_abundance]

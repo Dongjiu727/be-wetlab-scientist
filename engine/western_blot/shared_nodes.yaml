@@ -1,0 +1,140 @@
+# Western Blot 共享诊断节点
+# 这些节点可以被多个case通过node_id引用，避免重复定义同一套排查逻辑。
+# node_antibody_problem 支持通过 params 传入 antibody_role，实现同一子树用于
+# 排查不同抗体角色（target / reference）——ADR-002的"外部参数化"复用模式。
+
+check_reagent_validity:
+  question: "本次用到的关键试剂（抗体、稀释液、显影液、转膜液等）是否在有效期内，包装/外观有无破损？"
+  question_en: >
+    Are the key reagents used this time (antibodies, diluents, developing solution,
+    transfer buffer, etc.) within their expiration date, with no damage to
+    packaging/appearance?
+  branches:
+    - answer: "发现有试剂过期或破损"
+      answer_en: "Found expired or damaged reagent(s)"
+      diagnosis: "试剂失效"
+      diagnosis_en: "Reagent failure"
+      confirm_experiment: "更换新试剂重新实验"
+      confirm_experiment_en: "Replace with fresh reagents and repeat the experiment"
+    - answer: "试剂均在有效期内且完好"
+      answer_en: "All reagents are within date and intact"
+      next: check_membrane_cutting
+
+check_membrane_cutting:
+  question: "膜是否被剪成条状分别孵育？目标蛋白分子量是否接近剪切边界？"
+  question_en: >
+    Was the membrane cut into strips for separate incubation? Is the target protein's
+    molecular weight close to a cut boundary?
+  branches:
+    - answer: "是，且目标蛋白分子量确实接近某个剪切线"
+      answer_en: "Yes, and the target protein's MW is indeed close to a cut line"
+      diagnosis: "目标条带可能被剪到了其他膜条上（或被丢弃的那一条）"
+      diagnosis_en: "The target band may have ended up on a different strip (or the discarded one)"
+      confirm_experiment: "检查其他剪下的膜条/丽春红染色照片，确认目标区域出现在哪一条上"
+      confirm_experiment_en: >
+        Check the other cut strips / Ponceau S staining photos to confirm which strip
+        the target region ended up on
+    - answer: "否，或目标分子量明显不在任何剪切边界附近"
+      answer_en: "No, or the target MW is clearly not near any cut boundary"
+      next: check_controls
+
+check_controls:
+  question: "阳性对照和阴性对照结果如何？"
+  question_en: "What were the results of the positive and negative controls?"
+  branches:
+    - answer: "阳性对照也无信号"
+      answer_en: "The positive control also shows no signal"
+      next:
+        node: node_antibody_problem
+        params:
+          antibody_role: "目标蛋白抗体（阳性对照也失败，怀疑抗体体系整体问题）"
+          antibody_role_en: "target protein antibody (positive control also failed, suspect a system-wide antibody issue)"
+    - answer: "阳性对照有条带，阴性对照干净（对照正常）"
+      answer_en: "Positive control shows a band, negative control is clean (controls are normal)"
+      next: check_total_protein
+
+check_total_protein:
+  question: "转膜后丽春红染膜 + 凝胶考马斯亮蓝染色，能看到总蛋白条带吗？"
+  question_en: >
+    After transfer, with Ponceau S membrane staining + Coomassie blue gel staining,
+    can you see total protein bands?
+  branches:
+    - answer: "膜上无总蛋白，胶上仍有明显残留蛋白"
+      answer_en: "No total protein on the membrane, and the gel still shows clear residual protein"
+      diagnosis: "转膜失败"
+      diagnosis_en: "Transfer failure"
+      confirm_experiment: "检查转膜buffer新鲜度、电压/电流、时间，重新转膜"
+      confirm_experiment_en: >
+        Check the freshness of the transfer buffer, voltage/current, and time, then
+        redo the transfer
+    - answer: "膜上有总蛋白（转移基本正常）"
+      answer_en: "Total protein is visible on the membrane (transfer is basically normal)"
+      next: check_target_size
+
+check_target_size:
+  question: "目标蛋白理论分子量对应区域，总蛋白信号是否正常？（注意：marker/ladder位置正常≠目标蛋白真的转过来了）"
+  question_en: >
+    At the region corresponding to the target protein's theoretical molecular weight, is
+    the total protein signal normal? (Note: a normal marker/ladder position does not mean
+    the target protein actually transferred.)
+  branches:
+    - answer: "目标蛋白很小（<10-15kDa），怀疑电泳阶段就跑出胶底"
+      answer_en: "Target protein is very small (<10–15 kDa), suspect it ran off the bottom of the gel during electrophoresis"
+      diagnosis: "小分子蛋白电泳时间过长/胶浓度不合适，蛋白跑出凝胶底部"
+      diagnosis_en: "Electrophoresis ran too long, or gel concentration was unsuitable, for a small protein, which ran off the bottom of the gel"
+      confirm_experiment: "缩短电泳时间，或换更高浓度胶（如15-20%）/Tris-Tricine胶体系"
+      confirm_experiment_en: >
+        Shorten electrophoresis time, or switch to a higher-percentage gel (e.g. 15–20%)
+        or a Tris-Tricine gel system
+    - answer: "总蛋白在膜上能看到，但目标区域信号弱，怀疑转膜时穿膜"
+      answer_en: "Total protein is visible on the membrane, but the target region's signal is weak — suspect it passed through the membrane during transfer"
+      diagnosis: "转膜条件不适合小分子蛋白，蛋白穿过膜孔跑走"
+      diagnosis_en: "Transfer conditions were unsuitable for a small protein, which passed through the membrane pores"
+      confirm_experiment: "降低甲醇浓度/电压，缩短转膜时间，换0.2μm孔径PVDF膜"
+      confirm_experiment_en: >
+        Lower the methanol concentration/voltage, shorten transfer time, and switch to a
+        0.2 μm pore-size PVDF membrane
+    - answer: "目标蛋白很大（>150kDa），该区域信号弱"
+      answer_en: "Target protein is very large (>150 kDa), and the signal in that region is weak"
+      diagnosis: "大蛋白未能有效转出，转膜方式不适合"
+      diagnosis_en: "The large protein wasn't effectively transferred out; the transfer method was unsuitable"
+      confirm_experiment: "改湿转，延长转膜时间，检查膜孔径规格"
+      confirm_experiment_en: >
+        Switch to wet transfer, extend the transfer time, and check the membrane pore size
+    - answer: "该区域总蛋白信号正常"
+      answer_en: "Total protein signal in this region is normal"
+      next:
+        node: node_antibody_problem
+        params:
+          antibody_role: "目标蛋白抗体"
+          antibody_role_en: "target protein antibody"
+
+node_antibody_problem:
+  question: "抗体排查（{antibody_role}）"
+  question_en: "Antibody troubleshooting ({antibody_role})"
+  is_checklist: true
+  checklist:
+    - "二抗种属是否与一抗宿主种属匹配（如一抗为鼠源，二抗需为anti-mouse）"
+    - "说明书确认种属反应性/稀释比例"
+    - "是否过期/保存不当/反复冻融"
+    - "提高一抗、二抗浓度"
+    - "改4°C过夜孵育一抗"
+    - "延长显色/曝光时间"
+  checklist_en:
+    - "Does the secondary antibody's host species match the primary antibody's host (e.g. if primary is mouse-derived, secondary must be anti-mouse)?"
+    - "Check the datasheet for species reactivity/dilution ratio"
+    - "Is it expired / improperly stored / repeatedly freeze-thawed?"
+    - "Increase primary and secondary antibody concentration"
+    - "Switch to 4°C overnight incubation for the primary antibody"
+    - "Extend development/exposure time"
+  on_all_ruled_out: check_expression_level
+
+check_expression_level:
+  question: "以上均已排查，目标蛋白本身表达量是否过低？"
+  question_en: "All of the above have been ruled out — could the target protein's own expression level be too low?"
+  diagnosis: "内源表达量可能过低"
+  diagnosis_en: "Endogenous expression may be too low"
+  confirm_experiment: "增加上样量，做loading梯度（如10/20/40μg）；重新核对胶浓度和膜规格是否匹配目标蛋白大小"
+  confirm_experiment_en: >
+    Increase the loading amount and run a loading gradient (e.g. 10/20/40 μg); re-check
+    that the gel concentration and membrane spec match the target protein's size

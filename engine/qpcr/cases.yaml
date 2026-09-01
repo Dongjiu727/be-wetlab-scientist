@@ -1,0 +1,92 @@
+- case_id: qPCR-001
+  symptom: "Ct值异常晚（比预期高）"
+  symptom_en: "Abnormally late Ct value (higher than expected)"
+  entry_point: check_melt_peak_shape
+  nodes:
+    check_melt_peak_shape:
+      question: "熔解曲线是单峰还是多峰？"
+      question_en: "Is the melt curve single-peak or multi-peak?"
+      branches:
+        - answer: "多峰（怀疑非特异性扩增）"
+          answer_en: "Multiple peaks (suspect non-specific amplification)"
+          next: check_peak_position_and_curve
+        - answer: "单峰"
+          answer_en: "Single peak"
+          next: check_ct_threshold
+
+    check_ct_threshold:
+      question: "Ct值是否超过35？"
+      question_en: "Is the Ct value above 35?"
+      branches:
+        - answer: "超过35（接近检测极限）"
+          answer_en: "Above 35 (close to the limit of detection)"
+          diagnosis: "结果接近方法检测下限，可能不稳定"
+          diagnosis_en: "The result is near the assay's lower detection limit and may be unstable"
+          confirm_experiment: "增加起始样本量，或考虑预扩增等提高灵敏度的方法"
+          confirm_experiment_en: >
+            Increase the starting sample amount, or consider sensitivity-boosting methods
+            such as pre-amplification
+        - answer: "未超过35"
+          answer_en: "Not above 35"
+          next: check_reference_gene_ct
+
+    check_reference_gene_ct:
+      question: "reference gene的扩增曲线和Ct值是否正常？"
+      question_en: "Are the reference gene's amplification curve and Ct value normal?"
+      branches:
+        - answer: "正常"
+          answer_en: "Normal"
+          next: check_primer_validated
+        - answer: "异常"
+          answer_en: "Abnormal"
+          diagnosis: "reference gene本身可能有问题，需要先单独排查reference gene"
+          diagnosis_en: "The reference gene itself may have an issue; troubleshoot the reference gene separately first"
+          confirm_experiment: "针对reference gene单独走一遍无扩增/异常排查流程"
+          confirm_experiment_en: >
+            Run the no-amplification/abnormal-result troubleshooting workflow separately
+            for the reference gene
+
+  author_case_note: >
+    作者的经验回忆，供参考：Ct异常晚但单峰、未超35、reference也正常时，多数情况是内源表达量低，
+    可通过增加起始样本量解决，但要注意reference gene的Ct也会随之降低，
+    若降到6-8以下同样不可靠，需要对reference gene模板额外稀释。
+  author_case_note_en: >
+    Author's field notes, for reference: when Ct is abnormally late but the curve is
+    single-peak, below 35, and the reference gene is normal, low endogenous expression
+    is the most common cause and can usually be fixed by increasing the starting sample
+    amount. Note that the reference gene's Ct will drop accordingly too — if it drops
+    below 6–8 it also becomes unreliable, so the reference gene template needs extra
+    dilution in that case.
+  tags: [tumor_immunology, late_ct, low_expression]
+
+- case_id: qPCR-002
+  symptom: "完全无扩增"
+  symptom_en: "No amplification at all"
+  entry_point: check_primer_validated
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：这个case几乎完全复用了qPCR的共享排查子树
+    （引物验证 → 存储操作 → 阳性阴性对照 → cDNA质量），
+    说明这套共享节点设计覆盖了qPCR最常见的无扩增根因路径。
+  author_case_note_en: >
+    Author's field notes, for reference: this case reuses almost the entire qPCR shared
+    troubleshooting subtree (primer validation → storage/handling → positive/negative
+    controls → cDNA quality), which shows that this shared-node design covers the most
+    common root causes of no amplification in qPCR.
+  tags: [tumor_immunology, no_amplification, primer_validation, rna_degradation]
+
+- case_id: qPCR-003
+  symptom: "熔解曲线多峰，怀疑非特异扩增或污染"
+  symptom_en: "Multiple melt-curve peaks, suspect non-specific amplification or contamination"
+  entry_point: check_peak_position_and_curve
+  nodes: {}
+  author_case_note: >
+    作者的经验回忆，供参考：现在实验室多用商业化reaction mix，退火温度普遍设计在59-60°C左右，
+    引物设计常直接参考高引用率文献中验证过的序列，减少了从零设计的troubleshooting频率。
+  author_case_note_en: >
+    Author's field notes, for reference: most labs now use commercial reaction mixes,
+    with annealing temperatures typically designed around 59–60°C, and primer sequences
+    are often taken directly from validated sequences in highly-cited papers rather than
+    designed from scratch — which has reduced how often this kind of troubleshooting is
+    needed.
+  tags: [tumor_immunology, primer_specificity, contamination]
